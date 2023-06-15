@@ -128,3 +128,14 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# for workshp
+*.swp
+package-lock.json
+node_modules/
+npm-debug.log*
+cdk.context.json
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
