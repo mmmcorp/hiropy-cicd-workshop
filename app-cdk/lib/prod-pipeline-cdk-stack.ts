@@ -91,7 +91,7 @@ export class ProdPipelineCdkStack extends Stack {
           actionName: "CodeCommit",
           repository: sourceRepo,
           output: sourceOutput,
-          branch: "main",
+          branch: "feature/demo",
         }),
       ],
     });

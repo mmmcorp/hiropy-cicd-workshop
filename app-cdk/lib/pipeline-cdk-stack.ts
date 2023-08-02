@@ -35,8 +35,49 @@ export class PipelineCdkStack extends Stack {
           computeType: codebuild.ComputeType.LARGE,
         },
         buildSpec: codebuild.BuildSpec.fromSourceFilename("buildspec_test.yml"),
-      }
+      },
     );
+
+    const dockerBuildProject = new codebuild.PipelineProject(
+      this,
+      "DockerBuildProject",
+      {
+        environmentVariables: {
+          IMAGE_TAG: { value: "latest" },
+          IMAGE_REPO_URI: { value: props.ecrRepository.repositoryUri },
+          AWS_ACCOUNT_ID: { value: process.env.CDK_DEFAULT_ACCOUNT },
+          AWS_DEFAULT_REGION: { value: process.env.CDK_DEFAULT_REGION },
+        },
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+          privileged: true,
+          computeType: codebuild.ComputeType.LARGE,
+        },
+        buildSpec: codebuild.BuildSpec.fromSourceFilename(
+          "buildspec_docker.yml",
+        ),
+      },
+    );
+
+    const dockerBuildRolePolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: ["*"],
+      actions: [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetRepositoryPolicy",
+        "ecr:DescribeRepositories",
+        "ecr:ListImages",
+        "ecr:DescribeImages",
+        "ecr:BatchGetImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage",
+      ],
+    });
+    dockerBuildProject.addToRolePolicy(dockerBuildRolePolicy);
 
     const pipeline = new codepipeline.Pipeline(this, "CICD_Workshop_Pipeline", {
       pipelineName: "CICD_Workshop_Pipeline",
@@ -45,6 +86,7 @@ export class PipelineCdkStack extends Stack {
 
     const sourceOutput = new codepipeline.Artifact();
     const unitTestOutput = new codepipeline.Artifact();
+    const dockerBuildOutput = new codepipeline.Artifact();
 
     pipeline.addStage({
       stageName: "Source",
@@ -53,7 +95,7 @@ export class PipelineCdkStack extends Stack {
           actionName: "CodeCommit",
           repository: sourceRepo,
           output: sourceOutput,
-          branch: "main",
+          branch: "feature/demo",
         }),
       ],
     });
@@ -66,6 +108,17 @@ export class PipelineCdkStack extends Stack {
           project: unitTestProject,
           input: sourceOutput,
           outputs: [unitTestOutput],
+        }),
+      ],
+    });
+    pipeline.addStage({
+      stageName: "ECS",
+      actions: [
+        new codepipeline_actions.CodeBuildAction({
+          actionName: "docker-step",
+          project: dockerBuildProject,
+          input: sourceOutput,
+          outputs: [dockerBuildOutput],
         }),
       ],
     });
