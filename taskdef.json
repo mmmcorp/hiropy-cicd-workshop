@@ -1,0 +1,22 @@
+{
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT>:role/<ROLE_NAME>",
+  "containerDefinitions": [
+    {
+      "name": "my-app",
+      "image": "<ACCOUNT>.dkr.ecr.ap-northeast-1.amazonaws.com/<REPOSITORY_NAME>:latest",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true
+    }
+  ],
+  "family": "<FAMILY_NAME>",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024"
+}
